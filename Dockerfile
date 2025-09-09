@@ -1,22 +1,20 @@
-FROM ubuntu:22.04
+# Use a tiny Linux image
+FROM alpine:latest
 
-# Prevent interactive prompts
-ENV DEBIAN_FRONTEND=noninteractive
+# Install OpenSSH
+RUN apk update && apk add --no-cache openssh bash
 
-# Update & install OpenSSH + ttyd + basic tools
-RUN apt update && \
-    apt install -y openssh-client openssh-server curl wget git nano ttyd && \
-    apt clean
+# Set root password (change this!)
+RUN echo "root:koyeb123" | chpasswd
 
-# Set default root password for SSH server
-RUN mkdir /var/run/sshd && \
-    echo 'root:koyeb123' | chpasswd
+# Enable root login in SSH
+RUN mkdir -p /var/run/sshd && \
+    sed -i 's/#PermitRootLogin.*/PermitRootLogin yes/' /etc/ssh/sshd_config && \
+    echo "PasswordAuthentication yes" >> /etc/ssh/sshd_config && \
+    echo "PermitEmptyPasswords no" >> /etc/ssh/sshd_config
 
-# Expose ttyd (web terminal) on port 8000
-EXPOSE 8000
-
-# Expose SSH server on port 22 (optional)
+# Expose SSH port
 EXPOSE 22
 
-# Start ttyd by default on port 8000
-CMD ["ttyd", "-p", "8000", "bash"]
+# Start SSH server when container starts
+CMD ["/usr/sbin/sshd", "-D"]
