@@ -1,20 +1,20 @@
-# Use a tiny Linux image
 FROM alpine:latest
 
-# Install OpenSSH
+# Install OpenSSH and bash
 RUN apk update && apk add --no-cache openssh bash
 
-# Set root password (change this!)
+# Set root password
 RUN echo "root:koyeb123" | chpasswd
 
-# Enable root login in SSH
-RUN mkdir -p /var/run/sshd && \
-    sed -i 's/#PermitRootLogin.*/PermitRootLogin yes/' /etc/ssh/sshd_config && \
-    echo "PasswordAuthentication yes" >> /etc/ssh/sshd_config && \
-    echo "PermitEmptyPasswords no" >> /etc/ssh/sshd_config
+# Generate SSH host keys if missing
+RUN ssh-keygen -A
+
+# Allow root login & enable password authentication
+RUN sed -i 's/#PermitRootLogin.*/PermitRootLogin yes/' /etc/ssh/sshd_config && \
+    sed -i 's/#PasswordAuthentication.*/PasswordAuthentication yes/' /etc/ssh/sshd_config
 
 # Expose SSH port
 EXPOSE 22
 
-# Start SSH server when container starts
+# Start SSH daemon in foreground (important for Koyeb)
 CMD ["/usr/sbin/sshd", "-D"]
